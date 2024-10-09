@@ -39,19 +39,19 @@ struct TurnDetection: Encodable {
     let silence_duration_ms: Int
 }
 
-struct Tool: Encodable {
+public struct Tool: Encodable {
     let type: String
     let name: String
     let description: String
     let parameters: ToolParameters
 }
 
-struct ToolParameters: Encodable {
+public struct ToolParameters: Encodable {
     let type: String
     let properties: [String: ToolParameterProperty]
     let required: [String]
 }
 
-struct ToolParameterProperty: Encodable {
+public struct ToolParameterProperty: Encodable {
     let type: String
 }
