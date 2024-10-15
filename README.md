@@ -1,6 +1,6 @@
-# SakuraKit: Swift SDK to Quickly Prototype OpenAI Realtime API
+# SakuraKit: Swift SDK for Prototyping AI Speech Generation
 
-SakuraKit is a Swift SDK designed to quickly prototype with the OpenAI Realtime API to build low-latency, multimodal experiences with ease. 
+SakuraKit is a Swift SDK designed to quickly prototyping speech-to-speech or text-to-speech using different APIs to build low-latency, multimodal experiences with ease. 
 
 This SDK is named after the cherry blossoms (Sakura) to enjoy in Shibuya next year. 🌸
 
