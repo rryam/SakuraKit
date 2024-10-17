@@ -23,14 +23,16 @@ public actor SakuraKit: NSObject {
 
     /// The API key used for authentication with OpenAI's services.
     private let apiKey: String
+    private let model: Model
     private var socketStream: SocketStream?
     private let logger = Logger(subsystem: "com.example.SakuraKit", category: "WebSocket")
 
     /// Initializes a new instance of `SakuraKit`.
     ///
     /// - Parameter apiKey: The API key for authenticating with OpenAI's services.
-    public init(apiKey: String) {
+    public init(apiKey: String, model: Model) {
         self.apiKey = apiKey
+        self.model = model
     }
 
     /// Establishes a WebSocket connection to OpenAI's Realtime API.
@@ -45,7 +47,7 @@ public actor SakuraKit: NSObject {
         urlComponents.host = "api.openai.com"
         urlComponents.path = "/v1/realtime"
         urlComponents.queryItems = [
-            URLQueryItem(name: "model", value: "gpt-4o-realtime-preview-2024-10-01")
+            URLQueryItem(name: "model", value: model.name)
         ]
 
         guard let url = urlComponents.url else {
@@ -154,6 +156,24 @@ extension SakuraKit: URLSessionWebSocketDelegate {
         logger.notice("WebSocket connection closed with code: \(closeCode.rawValue)")
         if let reason = reason, let reasonString = String(data: reason, encoding: .utf8) {
             logger.debug("Closure reason: \(reasonString)")
+        }
+    }
+}
+
+public extension SakuraKit {
+    enum Model {
+        case stable
+        case latest
+        
+        var name: String {
+            switch self {
+            case .latest:
+                "gpt-4o-realtime-preview-2024-10-01"
+            case .stable:
+                "gpt-4o-realtime-preview"
+            @unknown default:
+                "gpt-4o-realtime-preview"
+            }
         }
     }
 }
