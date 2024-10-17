@@ -25,35 +25,37 @@ public actor SakuraKit: NSObject {
   /// The active WebSocket task managing the connection.
   private var webSocketTask: URLSessionWebSocketTask?
 
-  /// The API key used for authentication with OpenAI's services.
-  private let apiKey: String
-  private var socketStream: SocketStream?
-  private let logger = Logger(subsystem: "com.example.SakuraKit", category: "WebSocket")
+    /// The API key used for authentication with OpenAI's services.
+    private let apiKey: String
+    private let model: Model
+    private var socketStream: SocketStream?
+    private let logger = Logger(subsystem: "com.example.SakuraKit", category: "WebSocket")
 
-  /// Initializes a new instance of `SakuraKit`.
-  ///
-  /// - Parameter apiKey: The API key for authenticating with OpenAI's services.
-  public init(apiKey: String) {
-    self.apiKey = apiKey
-  }
+    /// Initializes a new instance of `SakuraKit`.
+    ///
+    /// - Parameter apiKey: The API key for authenticating with OpenAI's services.
+    public init(apiKey: String, model: Model) {
+        self.apiKey = apiKey
+        self.model = model
+    }
 
-  /// Establishes a WebSocket connection to OpenAI's Realtime API.
-  ///
-  /// This method constructs the necessary URL and request, including authentication headers,
-  /// and initiates the WebSocket connection.
-  ///
-  /// - Note: If the connection is successful, the `webSocketTask` property will be updated with the new task.
-  public func connect() async throws {
-    var urlComponents = URLComponents()
-    urlComponents.scheme = "wss"
-    urlComponents.host = "api.openai.com"
-    urlComponents.path = "/v1/realtime"
-    urlComponents.queryItems = [
-      URLQueryItem(name: "model", value: "gpt-4o-realtime-preview-2024-10-01")
-    ]
-
-    guard let url = urlComponents.url else {
-      throw NSError(domain: "SakuraKitError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to create URL for WebSocket connection"])
+    /// Establishes a WebSocket connection to OpenAI's Realtime API.
+    ///
+    /// This method constructs the necessary URL and request, including authentication headers,
+    /// and initiates the WebSocket connection.
+    ///
+    /// - Note: If the connection is successful, the `webSocketTask` property will be updated with the new task.
+    public func connect() async throws {
+        var urlComponents = URLComponents()
+        urlComponents.scheme = "wss"
+        urlComponents.host = "api.openai.com"
+        urlComponents.path = "/v1/realtime"
+        urlComponents.queryItems = [
+            URLQueryItem(name: "model", value: model.name)
+        ]
+    
+        guard let url = urlComponents.url else {
+            throw NSError(domain: "SakuraKitError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to create URL for WebSocket connection"])
     }
 
     var request = URLRequest(url: url)
@@ -61,6 +63,7 @@ public actor SakuraKit: NSObject {
     request.addValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
 
     let session = URLSession(configuration: .default)
+    
     let task = session.webSocketTask(with: request)
     self.webSocketTask = task
     self.socketStream = SocketStream(task: task)
@@ -253,4 +256,22 @@ extension SakuraKit: URLSessionWebSocketDelegate {
       logger.debug("Closure reason: \(reasonString)")
     }
   }
+}
+
+public extension SakuraKit {
+    enum Model {
+        case stable
+        case latest
+        
+        var name: String {
+            switch self {
+            case .latest:
+                "gpt-4o-realtime-preview-2024-10-01"
+            case .stable:
+                "gpt-4o-realtime-preview"
+            @unknown default:
+                "gpt-4o-realtime-preview"
+            }
+        }
+    }
 }
