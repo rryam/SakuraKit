@@ -9,53 +9,52 @@ import Foundation
 import os.log
 import AVFoundation
 
-/// A class that manages WebSocket connections to OpenAI's Realtime API and HTTP requests to OpenAI's Chat Completions API.
+/// A class that manages WebSocket connections to OpenAI's Realtime API.
 ///
 /// `SakuraKit` provides interfaces for:
-/// - Establishing, managing, and closing WebSocket connections to OpenAI's Realtime API.
-/// - Making HTTP requests to OpenAI's Chat Completions API for text and audio responses.
+/// - Establishing and managing WebSocket connections to OpenAI's Realtime API
+/// - Sending and receiving text and audio messages
+/// - Handling function calls and responses
+/// - Managing conversation state and history
 ///
-/// It handles authentication, connection lifecycle, and logging for both types of interactions.
-///
-/// - Important: This class is designed to be used as an actor to ensure thread-safe access to its properties and methods.
-///
-/// - Note: The class name "SakuraKit" is inspired by the cherry blossom (桜, sakura), symbolizing beauty and transience in Japanese culture. 🌸
+/// - Important: This class is designed to be used as an actor to ensure thread-safe access.
 public actor SakuraKit: NSObject {
 
   /// The active WebSocket task managing the connection.
   private var webSocketTask: URLSessionWebSocketTask?
 
-    /// The API key used for authentication with OpenAI's services.
-    private let apiKey: String
-    private let model: Model
-    private var socketStream: SocketStream?
-    private let logger = Logger(subsystem: "com.example.SakuraKit", category: "WebSocket")
+  /// The API key used for authentication with OpenAI's services.
+  private let apiKey: String
+  private let model: Model
+  private var socketStream: SocketStream?
+  private let logger = Logger(subsystem: "com.example.SakuraKit", category: "WebSocket")
 
-    /// Initializes a new instance of `SakuraKit`.
-    ///
-    /// - Parameter apiKey: The API key for authenticating with OpenAI's services.
-    public init(apiKey: String, model: Model) {
-        self.apiKey = apiKey
-        self.model = model
-    }
+  /// Initializes a new instance of `SakuraKit`.
+  ///
+  /// - Parameter apiKey: The API key for authenticating with OpenAI's services.
+  public init(apiKey: String, model: Model) {
+    self.apiKey = apiKey
+    self.model = model
+  }
 
-    /// Establishes a WebSocket connection to OpenAI's Realtime API.
-    ///
-    /// This method constructs the necessary URL and request, including authentication headers,
-    /// and initiates the WebSocket connection.
-    ///
-    /// - Note: If the connection is successful, the `webSocketTask` property will be updated with the new task.
-    public func connect() async throws {
-        var urlComponents = URLComponents()
-        urlComponents.scheme = "wss"
-        urlComponents.host = "api.openai.com"
-        urlComponents.path = "/v1/realtime"
-        urlComponents.queryItems = [
-            URLQueryItem(name: "model", value: model.name)
-        ]
+  /// Establishes a WebSocket connection to OpenAI's Realtime API.
+  ///
+  /// This method constructs the necessary URL and request, including authentication headers,
+  /// and initiates the WebSocket connection.
+  ///
+  /// - Note: If the connection is successful, the `webSocketTask` property will be updated with the new task.
+  public func connect() async throws {
+    var urlComponents = URLComponents()
+    urlComponents.scheme = "wss"
+    urlComponents.host = "api.openai.com"
+    urlComponents.path = "/v1/realtime"
+    urlComponents.queryItems = [
+      URLQueryItem(name: "model", value: model.name)
+    ]
     
-        guard let url = urlComponents.url else {
-            throw NSError(domain: "SakuraKitError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Failed to create URL for WebSocket connection"])
+    guard let url = urlComponents.url else {
+      throw NSError(domain: "SakuraKitError", code: 0, 
+                   userInfo: [NSLocalizedDescriptionKey: "Failed to create URL"])
     }
 
     var request = URLRequest(url: url)
@@ -63,15 +62,12 @@ public actor SakuraKit: NSObject {
     request.addValue("realtime=v1", forHTTPHeaderField: "OpenAI-Beta")
 
     let session = URLSession(configuration: .default)
-    
     let task = session.webSocketTask(with: request)
     self.webSocketTask = task
     self.socketStream = SocketStream(task: task)
 
     logger.info("WebSocket connection initiated")
-
-    // Send initial ResponseCreateEvent
-    try await sendResponseCreateEvent()
+    task.resume()
 
     // Start receiving messages
     await receiveMessages()
@@ -91,24 +87,24 @@ public actor SakuraKit: NSObject {
   /// This method continuously receives messages from the WebSocket and processes them.
   private func receiveMessages() async {
     guard let stream = socketStream else {
-      logger.error("SocketStream is not initialized")
+      logger.error("SocketStream not initialized")
       return
     }
 
     do {
       for try await message in stream {
         switch message {
-          case .string(let text):
-            if let data = text.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-              logger.info("Received message: \(json)")
-            }
-          case .data(let data):
-            if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-              logger.info("Received data: \(json)")
-            }
-          @unknown default:
-            logger.error("Unknown message type received")
+        case .string(let text):
+          if let data = text.data(using: .utf8),
+             let event = try? JSONDecoder().decode(RealtimeServerEvent.self, from: data) {
+            await handleServerEvent(event)
+          }
+        case .data(let data):
+          if let event = try? JSONDecoder().decode(RealtimeServerEvent.self, from: data) {
+            await handleServerEvent(event)
+          }
+        @unknown default:
+          logger.error("Unknown message type")
         }
       }
     } catch {
@@ -190,6 +186,51 @@ public actor SakuraKit: NSObject {
     )
     
     return (jsonResponse.choices.first?.message.content ?? "", audioResponse)
+  }
+
+  /// Sends a text message to the WebSocket connection.
+  ///
+  /// This method constructs a text message and sends it to the WebSocket connection.
+  public func sendTextMessage(_ text: String) async throws {
+    let event = RealtimeEvent.conversationItemCreate(
+      item: MessageItem(
+        type: "message",
+        role: "user",
+        content: [
+          MessageContent(type: "input_text", text: text)
+        ]
+      )
+    )
+    
+    try await send(event)
+    try await createResponse()
+  }
+  
+  /// Sends an audio message to the WebSocket connection.
+  ///
+  /// This method constructs an audio message and sends it to the WebSocket connection.
+  public func sendAudioMessage(_ audioData: Data) async throws {
+    let base64Audio = audioData.base64EncodedString()
+    
+    let event = RealtimeEvent.inputAudioBufferAppend(
+      audio: base64Audio
+    )
+    
+    try await send(event)
+  }
+  
+  /// Creates a response to the WebSocket connection.
+  ///
+  /// This method constructs a response and sends it to the WebSocket connection.
+  private func createResponse() async throws {
+    let event = RealtimeEvent.responseCreate(
+      response: ResponseConfig(
+        modalities: ["text", "audio"],
+        instructions: "Please assist the user."
+      )
+    )
+    
+    try await send(event)
   }
 }
 
