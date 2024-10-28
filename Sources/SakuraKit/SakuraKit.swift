@@ -147,7 +147,7 @@ public actor SakuraKit: NSObject {
   /// - Returns: A tuple containing the text response and an AudioResponse structure with the audio data and transcript.
   ///
   /// - Throws: An error if the request fails, there's an issue with the response, or audio processing fails.
-  public func sendChatCompletionRequest(message: String, voice: String, audioFormat: String) async throws -> (String, AudioResponse) {
+  public func sendChatCompletionRequest(message: String? = nil, voice: String? = nil, audioFormat: String? = nil) async throws -> (String, AudioResponse) {
     let url = URL(string: "https://api.openai.com/v1/chat/completions")!
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
@@ -155,8 +155,8 @@ public actor SakuraKit: NSObject {
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
 
     let requestBody: [String: Any] = [
-      "model": "gpt-4o-audio-preview",
-      "modalities": ["text", "audio"],
+      "model": model.name,
+      "modalities": [model.type],
       "audio": ["voice": voice, "format": audioFormat],
       "messages": [
         ["role": "user", "content": message]
@@ -303,6 +303,7 @@ public extension SakuraKit {
     enum Model {
         case stable
         case latest
+        case audio
         
         var name: String {
             switch self {
@@ -310,8 +311,21 @@ public extension SakuraKit {
                 "gpt-4o-realtime-preview-2024-10-01"
             case .stable:
                 "gpt-4o-realtime-preview"
+            case .audio:
+                "gpt-4o-audio-preview"
             @unknown default:
                 "gpt-4o-realtime-preview"
+            }
+        }
+        
+        var type: String {
+            switch self {
+            case .stable:
+                "text"
+            case .latest:
+                "text"
+            case .audio:
+                "audio"
             }
         }
     }
