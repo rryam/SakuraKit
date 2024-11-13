@@ -372,16 +372,25 @@ private extension Data {
 }
 
 private extension JSONDecoder {
+  /// A JSON decoder configured to handle Play API date formats.
+  /// Uses ISO8601 format with internet date time and fractional seconds.
   static var playDateDecoder: JSONDecoder {
     let decoder = JSONDecoder()
+    
+    // Create formatter outside closure to avoid Sendable capture
     let formatter = ISO8601DateFormatter()
     formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     
+    // Use @Sendable closure that doesn't capture formatter
     decoder.dateDecodingStrategy = .custom { decoder in
       let container = try decoder.singleValueContainer()
       let dateStr = try container.decode(String.self)
       
-      guard let date = formatter.date(from: dateStr) else {
+      // Create new formatter inside closure instead of capturing
+      let localFormatter = ISO8601DateFormatter()
+      localFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+      
+      guard let date = localFormatter.date(from: dateStr) else {
         throw DecodingError.dataCorruptedError(
           in: container,
           debugDescription: "Invalid date format: \(dateStr)"
