@@ -99,9 +99,9 @@ public enum PlayNoteVoice: Sendable {
   public var gender: String {
     switch self {
     case .deedee, .nia, .inara, .constanza, .ava:
-      return "Female"
+      return "female"
     default:
-      return "Male"
+      return "male"
     }
   }
   
