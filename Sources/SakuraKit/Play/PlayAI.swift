@@ -344,12 +344,15 @@ public actor PlayAI {
             return response
 
           case .generating:
-            statusHandler?("Please wait, your PlayNote is still generating...")
+            statusHandler?("PlayNote is still generating...")
             try await Task.sleep(for: .seconds(60))
 
           case .failed:
-            statusHandler?("PlayNote creation failed, please try again.")
+            statusHandler?("PlayNote generation failed.")
             throw PlayAIError.generationFailed
+
+          case .none:
+            statusHandler?("PlayNote status unknown.")
         }
       } catch {
         statusHandler?("Error polling for PlayNote status: \(error.localizedDescription)")

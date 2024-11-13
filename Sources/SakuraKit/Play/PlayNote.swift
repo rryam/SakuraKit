@@ -155,7 +155,7 @@ public struct PlayNoteResponse: Decodable, Sendable {
   /// The synthesis style used.
   public let synthesisStyle: PlayNoteSynthesisStyle
   /// The status of the generation.
-  public let status: PlayNoteStatus
+  public let status: PlayNoteStatus?
   /// The duration in seconds.
   public let duration: Double?
   /// When the PlayNote was requested.
