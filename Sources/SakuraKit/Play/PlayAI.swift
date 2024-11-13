@@ -278,9 +278,7 @@ public actor PlayAI {
       throw PlayAIError.serverError(message: "Unknown error occurred")
     }
 
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
-    return try decoder.decode(PlayNoteResponse.self, from: data)
+    return try JSONDecoder.playDateDecoder.decode(PlayNoteResponse.self, from: data)
   }
 
   /// Gets the status and details of a PlayNote.
@@ -308,9 +306,7 @@ public actor PlayAI {
       throw PlayAIError.invalidResponse
     }
 
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .iso8601
-    return try decoder.decode(PlayNoteResponse.self, from: data)
+    return try JSONDecoder.playDateDecoder.decode(PlayNoteResponse.self, from: data)
   }
 
   /// Creates a PlayNote and polls for its completion status.
@@ -372,5 +368,17 @@ private extension Data {
     if let data = string.data(using: .utf8) {
       append(data)
     }
+  }
+}
+
+private extension JSONDecoder {
+  static var playDateDecoder: JSONDecoder {
+    let decoder = JSONDecoder()
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+    formatter.timeZone = TimeZone(abbreviation: "UTC")
+    
+    decoder.dateDecodingStrategy = .formatted(formatter)
+    return decoder
   }
 }
