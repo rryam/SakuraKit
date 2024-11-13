@@ -214,11 +214,12 @@ public actor PlayAI {
     urlRequest.httpMethod = "POST"
     urlRequest.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     urlRequest.addValue(userId, forHTTPHeaderField: "X-USER-ID")
-    urlRequest.addValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
     // Create form data
     let boundary = UUID().uuidString
     var formData = Data()
+
+    urlRequest.addValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
     // Helper function to append form field
     func appendFormField(named name: String, value: String) {
