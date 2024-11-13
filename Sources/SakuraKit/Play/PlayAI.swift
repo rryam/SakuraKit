@@ -237,11 +237,9 @@ public actor PlayAI {
     formData.append("--\(boundary)\r\n")
     formData.append("Content-Disposition: form-data; name=\"voice1Name\"\r\n\r\n")
     formData.append("\(request.voice1.name)\r\n")
-    if let gender = request.voice1.gender {
-      formData.append("--\(boundary)\r\n")
-      formData.append("Content-Disposition: form-data; name=\"voice1Gender\"\r\n\r\n")
-      formData.append("\(gender)\r\n")
-    }
+    formData.append("--\(boundary)\r\n")
+    formData.append("Content-Disposition: form-data; name=\"voice1Gender\"\r\n\r\n")
+    formData.append("\(request.voice1.gender)\r\n")
     
     // Add voice2 if present
     if let voice2 = request.voice2 {
@@ -251,11 +249,9 @@ public actor PlayAI {
       formData.append("--\(boundary)\r\n")
       formData.append("Content-Disposition: form-data; name=\"voice2Name\"\r\n\r\n")
       formData.append("\(voice2.name)\r\n")
-      if let gender = voice2.gender {
-        formData.append("--\(boundary)\r\n")
-        formData.append("Content-Disposition: form-data; name=\"voice2Gender\"\r\n\r\n")
-        formData.append("\(gender)\r\n")
-      }
+      formData.append("--\(boundary)\r\n")
+      formData.append("Content-Disposition: form-data; name=\"voice2Gender\"\r\n\r\n")
+      formData.append("\(voice2.gender)\r\n")
     }
     
     // Add final boundary
