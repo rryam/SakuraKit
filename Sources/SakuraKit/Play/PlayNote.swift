@@ -1,7 +1,7 @@
 import Foundation
 
 /// A structure representing a PlayNote synthesis request.
-public struct PlayNoteRequest {
+public struct PlayNoteRequest: Sendable {
   /// The URL to the source file.
   public let sourceFileUrl: URL
   /// The synthesis style of the PlayNote.
@@ -31,7 +31,7 @@ public struct PlayNoteRequest {
 }
 
 /// An enumeration of available Play.ai voices with their configurations.
-public enum PlayNoteVoice {
+public enum PlayNoteVoice: Sendable {
   case angelo, arsenio, cillian, timo, dexter, miles, briggs
   case deedee, nia, inara, constanza, gideon, casper, mitch, ava
   
@@ -129,7 +129,7 @@ public enum PlayNoteVoice {
 }
 
 /// The available synthesis styles for PlayNote.
-public enum PlayNoteSynthesisStyle: String, Decodable {
+public enum PlayNoteSynthesisStyle: String, Decodable, Sendable {
   /// A podcast-style conversation.
   case podcast = "podcast"
   /// An executive briefing style.
@@ -164,7 +164,7 @@ public struct PlayNoteResponse: Decodable, Sendable {
   public let createdAt: Date?
   
   /// The current status of the PlayNote.
-  public enum PlayNoteStatus: String, Decodable {
+  public enum PlayNoteStatus: String, Decodable, Sendable {
     case generating
     case completed
     case failed
