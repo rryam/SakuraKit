@@ -149,7 +149,7 @@ public struct PlayNoteResponse: Decodable, Sendable {
   /// The name of the PlayNote.
   public let name: String
   /// The source file URL.
-  public let sourceFileUrl: String
+  public let sourceFileUrl: String?
   /// The generated audio URL.
   public let audioUrl: String?
   /// The synthesis style used.
