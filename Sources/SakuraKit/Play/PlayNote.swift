@@ -141,7 +141,7 @@ public enum PlayNoteSynthesisStyle: String, Decodable {
 }
 
 /// A structure representing a PlayNote response.
-public struct PlayNoteResponse: Decodable {
+public struct PlayNoteResponse: Decodable, Sendable {
   /// The unique ID for the PlayNote.
   public let id: String
   /// The owner's ID.
