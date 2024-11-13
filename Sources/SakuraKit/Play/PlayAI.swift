@@ -52,6 +52,13 @@ public actor PlayAI {
 
     let (data, response) = try await URLSession.shared.data(for: request)
 
+    // Add logging
+    print("🌐 WebSocket Auth Response:")
+    print("📝 Status Code: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+    if let responseString = String(data: data, encoding: .utf8) {
+      print("📦 Response Data: \(responseString)")
+    }
+
     guard let httpResponse = response as? HTTPURLResponse,
           (200...299).contains(httpResponse.statusCode) else {
       throw PlayAIError.authenticationFailed
@@ -249,6 +256,13 @@ public actor PlayAI {
 
     let (data, response) = try await URLSession.shared.data(for: urlRequest)
 
+    // Add logging
+    print("🎵 Create PlayNote Response:")
+    print("📝 Status Code: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+    if let responseString = String(data: data, encoding: .utf8) {
+      print("📦 Response Data: \(responseString)")
+    }
+
     guard let httpResponse = response as? HTTPURLResponse else {
       throw PlayAIError.invalidResponse
     }
@@ -281,6 +295,13 @@ public actor PlayAI {
     request.addValue(userId, forHTTPHeaderField: "X-USER-ID")
 
     let (data, response) = try await URLSession.shared.data(for: request)
+
+    // Add logging
+    print("🔍 Get PlayNote Response:")
+    print("📝 Status Code: \((response as? HTTPURLResponse)?.statusCode ?? -1)")
+    if let responseString = String(data: data, encoding: .utf8) {
+      print("📦 Response Data: \(responseString)")
+    }
 
     guard let httpResponse = response as? HTTPURLResponse,
           (200...299).contains(httpResponse.statusCode) else {
