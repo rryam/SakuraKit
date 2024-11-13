@@ -198,4 +198,126 @@ public actor PlayAI {
       print("Audio saved to: \(audioFileURL.path)")
     }
   }
+  
+  /// Creates a new PlayNote using a source file URL.
+  ///
+  /// This method sends a request to create a new PlayNote with the specified configuration.
+  /// The generation process is asynchronous, and you'll need to poll the status using
+  /// `getPlayNote(id:)` to check when it's complete.
+  ///
+  /// - Parameter request: The PlayNote request configuration.
+  /// - Returns: A PlayNoteResponse containing the creation status and details.
+  /// - Throws: A PlayAIError if the request fails or returns an invalid response.
+  public func createPlayNote(_ request: PlayNoteRequest) async throws -> PlayNoteResponse {
+    let endpoint = URL(string: "https://api.play.ai/api/v1/playnotes")!
+    var urlRequest = URLRequest(url: endpoint)
+    urlRequest.httpMethod = "POST"
+    urlRequest.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    urlRequest.addValue(userId, forHTTPHeaderField: "X-USER-ID")
+    urlRequest.addValue("multipart/form-data", forHTTPHeaderField: "Content-Type")
+    
+    // Create form data
+    let boundary = UUID().uuidString
+    var formData = Data()
+    
+    // Add source file URL
+    formData.append("--\(boundary)\r\n")
+    formData.append("Content-Disposition: form-data; name=\"sourceFileUrl\"\r\n\r\n")
+    formData.append("\(request.sourceFileUrl.absoluteString)\r\n")
+    
+    // Add synthesis style
+    formData.append("--\(boundary)\r\n")
+    formData.append("Content-Disposition: form-data; name=\"synthesisStyle\"\r\n\r\n")
+    formData.append("\(request.synthesisStyle.rawValue)\r\n")
+    
+    // Add voice1
+    formData.append("--\(boundary)\r\n")
+    formData.append("Content-Disposition: form-data; name=\"voice1\"\r\n\r\n")
+    formData.append("\(request.voice1.id)\r\n")
+    formData.append("--\(boundary)\r\n")
+    formData.append("Content-Disposition: form-data; name=\"voice1Name\"\r\n\r\n")
+    formData.append("\(request.voice1.name)\r\n")
+    if let gender = request.voice1.gender {
+      formData.append("--\(boundary)\r\n")
+      formData.append("Content-Disposition: form-data; name=\"voice1Gender\"\r\n\r\n")
+      formData.append("\(gender)\r\n")
+    }
+    
+    // Add voice2 if present
+    if let voice2 = request.voice2 {
+      formData.append("--\(boundary)\r\n")
+      formData.append("Content-Disposition: form-data; name=\"voice2\"\r\n\r\n")
+      formData.append("\(voice2.id)\r\n")
+      formData.append("--\(boundary)\r\n")
+      formData.append("Content-Disposition: form-data; name=\"voice2Name\"\r\n\r\n")
+      formData.append("\(voice2.name)\r\n")
+      if let gender = voice2.gender {
+        formData.append("--\(boundary)\r\n")
+        formData.append("Content-Disposition: form-data; name=\"voice2Gender\"\r\n\r\n")
+        formData.append("\(gender)\r\n")
+      }
+    }
+    
+    // Add final boundary
+    formData.append("--\(boundary)--\r\n")
+    
+    urlRequest.httpBody = formData
+    
+    let (data, response) = try await URLSession.shared.data(for: urlRequest)
+    
+    guard let httpResponse = response as? HTTPURLResponse else {
+      throw PlayAIError.invalidResponse
+    }
+    
+    if httpResponse.statusCode == 403 {
+      throw PlayAIError.activeGenerationExists
+    }
+    
+    guard (200...299).contains(httpResponse.statusCode) else {
+      if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
+        throw PlayAIError.serverError(message: errorResponse.errorMessage)
+      }
+      throw PlayAIError.serverError(message: "Unknown error occurred")
+    }
+    
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    return try decoder.decode(PlayNoteResponse.self, from: data)
+  }
+  
+  /// Gets the status and details of a PlayNote.
+  ///
+  /// - Parameter id: The ID of the PlayNote to retrieve.
+  /// - Returns: A PlayNoteResponse containing the current status and details.
+  /// - Throws: A PlayAIError if the request fails or returns an invalid response.
+  public func getPlayNote(id: String) async throws -> PlayNoteResponse {
+    let endpoint = URL(string: "https://api.play.ai/api/v1/playnotes/\(id)")!
+    var request = URLRequest(url: endpoint)
+    request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+    request.addValue(userId, forHTTPHeaderField: "X-USER-ID")
+    
+    let (data, response) = try await URLSession.shared.data(for: request)
+    
+    guard let httpResponse = response as? HTTPURLResponse,
+          (200...299).contains(httpResponse.statusCode) else {
+      throw PlayAIError.invalidResponse
+    }
+    
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    return try decoder.decode(PlayNoteResponse.self, from: data)
+  }
+}
+
+private struct ErrorResponse: Decodable {
+  let errorMessage: String
+  let errorId: String
+}
+
+private extension Data {
+  mutating func append(_ string: String) {
+    if let data = string.data(using: .utf8) {
+      append(data)
+    }
+  }
 }

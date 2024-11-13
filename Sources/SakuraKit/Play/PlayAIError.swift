@@ -11,4 +11,12 @@ import Foundation
 public enum PlayAIError: Error {
   /// Indicates that the authentication request failed.
   case authenticationFailed
+  /// Indicates that the source file URL is invalid.
+  case invalidSourceFileURL
+  /// Indicates that the user already has an active generation.
+  case activeGenerationExists
+  /// Indicates that the response from the server was invalid.
+  case invalidResponse
+  /// Indicates that the server returned an error message.
+  case serverError(message: String)
 }
