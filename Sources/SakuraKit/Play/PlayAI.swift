@@ -15,16 +15,16 @@ import Foundation
 ///
 /// - Important: This class is designed as an actor to ensure thread-safe access to its properties and methods.
 public actor PlayAI {
-  
+
   /// The API key used for authentication with Play.ht services.
   private let apiKey: String
-  
+
   /// The user ID associated with the Play.ht account.
   private let userId: String
-  
+
   /// The URL for the WebSocket authentication endpoint.
   private let authEndpoint = URL(string: "https://api.play.ht/api/v3/websocket-auth")!
-  
+
   /// Initializes a new instance of `PlayAI`.
   ///
   /// - Parameters:
@@ -34,7 +34,7 @@ public actor PlayAI {
     self.apiKey = apiKey
     self.userId = userId
   }
-  
+
   /// Authenticates with the Play.ht API and retrieves a WebSocket URL.
   ///
   /// This method sends an authenticated POST request to the Play.ht WebSocket
@@ -49,20 +49,20 @@ public actor PlayAI {
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     request.addValue(userId, forHTTPHeaderField: "X-User-Id")
     request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-    
+
     let (data, response) = try await URLSession.shared.data(for: request)
-    
+
     guard let httpResponse = response as? HTTPURLResponse,
           (200...299).contains(httpResponse.statusCode) else {
       throw PlayAIError.authenticationFailed
     }
-    
+
     let decoder = JSONDecoder()
     let authResponse = try decoder.decode(PlayAIWebSocketAuthResponse.self, from: data)
-    
+
     return authResponse.websocketURL
   }
-  
+
   /// Sends a Text-to-Speech (TTS) command to the Play.ht WebSocket API.
   ///
   /// This method establishes a WebSocket connection using the provided URL,
@@ -92,9 +92,9 @@ public actor PlayAI {
   ) async throws {
     let session = URLSession(configuration: .default)
     let webSocketTask = session.webSocketTask(with: url)
-    
+
     try await webSocketTask.resume()
-    
+
     let ttsCommand: [String: Any] = [
       "text": text,
       "voice": voice,
@@ -104,10 +104,10 @@ public actor PlayAI {
       "speed": speed,
       "request_id": requestId
     ].compactMapValues { $0 }
-    
+
     let jsonData = try JSONSerialization.data(withJSONObject: ttsCommand)
     let jsonString = String(data: jsonData, encoding: .utf8)!
-    
+
     try await webSocketTask.send(.string(jsonString))
   }
   /// Receives and processes messages from the WebSocket connection using an async stream.
@@ -126,38 +126,38 @@ public actor PlayAI {
     AsyncThrowingStream { continuation in
       Task {
         var audioChunks: [Data] = []
-        
+
         do {
           while true {
             let message = try await webSocketTask.receive()
             switch message {
-            case .string(let text):
-              if let data = text.data(using: .utf8),
-                 let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                 json.keys.contains("request_id") {
-                // End of audio stream
-                let audioData = audioChunks.reduce(Data(), +)
-                continuation.yield(audioData)
-                audioChunks.removeAll()
-              } else {
-                print("Received unexpected text message: \(text)")
-              }
-            case .data(let data):
-              // Received binary audio data
-              audioChunks.append(data)
-            @unknown default:
-              print("Received unknown message type")
+              case .string(let text):
+                if let data = text.data(using: .utf8),
+                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   json.keys.contains("request_id") {
+                  // End of audio stream
+                  let audioData = audioChunks.reduce(Data(), +)
+                  continuation.yield(audioData)
+                  audioChunks.removeAll()
+                } else {
+                  print("Received unexpected text message: \(text)")
+                }
+              case .data(let data):
+                // Received binary audio data
+                audioChunks.append(data)
+              @unknown default:
+                print("Received unknown message type")
             }
           }
         } catch {
           continuation.finish(throwing: error)
         }
-        
+
         continuation.finish()
       }
     }
   }
-  
+
   /// Handles WebSocket errors and connection closures.
   ///
   /// This method sets up error and closure handlers for the WebSocket connection.
@@ -175,7 +175,7 @@ public actor PlayAI {
       }
     }
   }
-  
+
   /// Processes the audio stream from the WebSocket connection.
   ///
   /// This method demonstrates how to use the `receiveMessages` function with an async stream.
@@ -185,12 +185,12 @@ public actor PlayAI {
   /// - Throws: An error if there's an issue processing the audio stream.
   private func processAudioStream(from webSocketTask: URLSessionWebSocketTask) async throws {
     let audioStream = receiveMessages(from: webSocketTask)
-    
+
     for try await audioData in audioStream {
       // Here you can handle the complete audio data
       // For example, you might want to play it, save it, or process it further
       print("Received complete audio data of size: \(audioData.count) bytes")
-      
+
       // Example: Save the audio data to a file
       let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
       let audioFileURL = documentsPath.appendingPathComponent("audio_\(Date().timeIntervalSince1970).mp3")
@@ -198,7 +198,7 @@ public actor PlayAI {
       print("Audio saved to: \(audioFileURL.path)")
     }
   }
-  
+
   /// Creates a new PlayNote using a source file URL.
   ///
   /// This method sends a request to create a new PlayNote with the specified configuration.
@@ -215,21 +215,21 @@ public actor PlayAI {
     urlRequest.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     urlRequest.addValue(userId, forHTTPHeaderField: "X-USER-ID")
     urlRequest.addValue("multipart/form-data", forHTTPHeaderField: "Content-Type")
-    
+
     // Create form data
     let boundary = UUID().uuidString
     var formData = Data()
-    
+
     // Add source file URL
     formData.append("--\(boundary)\r\n")
     formData.append("Content-Disposition: form-data; name=\"sourceFileUrl\"\r\n\r\n")
     formData.append("\(request.sourceFileUrl.absoluteString)\r\n")
-    
+
     // Add synthesis style
     formData.append("--\(boundary)\r\n")
     formData.append("Content-Disposition: form-data; name=\"synthesisStyle\"\r\n\r\n")
     formData.append("\(request.synthesisStyle.rawValue)\r\n")
-    
+
     // Add voice1
     formData.append("--\(boundary)\r\n")
     formData.append("Content-Disposition: form-data; name=\"voice1\"\r\n\r\n")
@@ -240,7 +240,7 @@ public actor PlayAI {
     formData.append("--\(boundary)\r\n")
     formData.append("Content-Disposition: form-data; name=\"voice1Gender\"\r\n\r\n")
     formData.append("\(request.voice1.gender)\r\n")
-    
+
     // Add voice2 if present
     if let voice2 = request.voice2 {
       formData.append("--\(boundary)\r\n")
@@ -253,34 +253,34 @@ public actor PlayAI {
       formData.append("Content-Disposition: form-data; name=\"voice2Gender\"\r\n\r\n")
       formData.append("\(voice2.gender)\r\n")
     }
-    
+
     // Add final boundary
     formData.append("--\(boundary)--\r\n")
-    
+
     urlRequest.httpBody = formData
-    
+
     let (data, response) = try await URLSession.shared.data(for: urlRequest)
-    
+
     guard let httpResponse = response as? HTTPURLResponse else {
       throw PlayAIError.invalidResponse
     }
-    
+
     if httpResponse.statusCode == 403 {
       throw PlayAIError.activeGenerationExists
     }
-    
+
     guard (200...299).contains(httpResponse.statusCode) else {
       if let errorResponse = try? JSONDecoder().decode(ErrorResponse.self, from: data) {
         throw PlayAIError.serverError(message: errorResponse.errorMessage)
       }
       throw PlayAIError.serverError(message: "Unknown error occurred")
     }
-    
+
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
     return try decoder.decode(PlayNoteResponse.self, from: data)
   }
-  
+
   /// Gets the status and details of a PlayNote.
   ///
   /// - Parameter id: The PlayNoteID to retrieve.
@@ -291,17 +291,62 @@ public actor PlayAI {
     var request = URLRequest(url: endpoint)
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     request.addValue(userId, forHTTPHeaderField: "X-USER-ID")
-    
+
     let (data, response) = try await URLSession.shared.data(for: request)
-    
+
     guard let httpResponse = response as? HTTPURLResponse,
           (200...299).contains(httpResponse.statusCode) else {
       throw PlayAIError.invalidResponse
     }
-    
+
     let decoder = JSONDecoder()
     decoder.dateDecodingStrategy = .iso8601
     return try decoder.decode(PlayNoteResponse.self, from: data)
+  }
+
+  /// Creates a PlayNote and polls for its completion status.
+  ///
+  /// This method creates a new PlayNote and continuously monitors its status until completion
+  /// or failure. It polls the status every 60 seconds and provides updates through the
+  /// statusHandler closure.
+  ///
+  /// - Parameters:
+  ///   - request: The PlayNote request configuration.
+  ///   - statusHandler: An optional closure to receive status updates during the polling process.
+  ///
+  /// - Returns: The final PlayNoteResponse containing the completed PlayNote details.
+  /// - Throws: A PlayAIError if the request fails or polling encounters an error.
+  public func createAndAwaitPlayNote(
+    _ request: PlayNoteRequest,
+    statusHandler: ((String) -> Void)? = nil
+  ) async throws -> PlayNoteResponse {
+    // Create the initial PlayNote
+    let initialResponse = try await createPlayNote(request)
+    let playNoteId = initialResponse.id
+
+    // Poll for completion
+    while true {
+      do {
+        let response = try await getPlayNote(id: PlayNoteID(playNoteId))
+
+        switch response.status {
+          case .completed:
+            statusHandler?("PlayNote generation complete!")
+            return response
+
+          case .generating:
+            statusHandler?("Please wait, your PlayNote is still generating...")
+            try await Task.sleep(for: .seconds(60))
+
+          case .failed:
+            statusHandler?("PlayNote creation failed, please try again.")
+            throw PlayAIError.generationFailed
+        }
+      } catch {
+        statusHandler?("Error polling for PlayNote status: \(error.localizedDescription)")
+        throw error
+      }
+    }
   }
 }
 

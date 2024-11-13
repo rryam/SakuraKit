@@ -19,4 +19,6 @@ public enum PlayAIError: Error {
   case invalidResponse
   /// Indicates that the server returned an error message.
   case serverError(message: String)
+  /// Indicates that the PlayNote generation process failed.
+  case generationFailed
 }
