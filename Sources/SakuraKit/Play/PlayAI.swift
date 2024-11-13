@@ -214,44 +214,31 @@ public actor PlayAI {
     urlRequest.httpMethod = "POST"
     urlRequest.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     urlRequest.addValue(userId, forHTTPHeaderField: "X-USER-ID")
-    urlRequest.addValue("multipart/form-data", forHTTPHeaderField: "Content-Type")
+    urlRequest.addValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
 
     // Create form data
     let boundary = UUID().uuidString
     var formData = Data()
 
-    // Add source file URL
-    formData.append("--\(boundary)\r\n")
-    formData.append("Content-Disposition: form-data; name=\"sourceFileUrl\"\r\n\r\n")
-    formData.append("\(request.sourceFileUrl.absoluteString)\r\n")
+    // Helper function to append form field
+    func appendFormField(named name: String, value: String) {
+      formData.append("--\(boundary)\r\n")
+      formData.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n")
+      formData.append("\(value)\r\n")
+    }
 
-    // Add synthesis style
-    formData.append("--\(boundary)\r\n")
-    formData.append("Content-Disposition: form-data; name=\"synthesisStyle\"\r\n\r\n")
-    formData.append("\(request.synthesisStyle.rawValue)\r\n")
-
-    // Add voice1
-    formData.append("--\(boundary)\r\n")
-    formData.append("Content-Disposition: form-data; name=\"voice1\"\r\n\r\n")
-    formData.append("\(request.voice1.id)\r\n")
-    formData.append("--\(boundary)\r\n")
-    formData.append("Content-Disposition: form-data; name=\"voice1Name\"\r\n\r\n")
-    formData.append("\(request.voice1.name)\r\n")
-    formData.append("--\(boundary)\r\n")
-    formData.append("Content-Disposition: form-data; name=\"voice1Gender\"\r\n\r\n")
-    formData.append("\(request.voice1.gender)\r\n")
+    // Add fields
+    appendFormField(named: "sourceFileUrl", value: request.sourceFileUrl.absoluteString)
+    appendFormField(named: "synthesisStyle", value: request.synthesisStyle.rawValue)
+    appendFormField(named: "voice1", value: request.voice1.id)
+    appendFormField(named: "voice1Name", value: request.voice1.name)
+    appendFormField(named: "voice1Gender", value: request.voice1.gender)
 
     // Add voice2 if present
     if let voice2 = request.voice2 {
-      formData.append("--\(boundary)\r\n")
-      formData.append("Content-Disposition: form-data; name=\"voice2\"\r\n\r\n")
-      formData.append("\(voice2.id)\r\n")
-      formData.append("--\(boundary)\r\n")
-      formData.append("Content-Disposition: form-data; name=\"voice2Name\"\r\n\r\n")
-      formData.append("\(voice2.name)\r\n")
-      formData.append("--\(boundary)\r\n")
-      formData.append("Content-Disposition: form-data; name=\"voice2Gender\"\r\n\r\n")
-      formData.append("\(voice2.gender)\r\n")
+      appendFormField(named: "voice2", value: voice2.id)
+      appendFormField(named: "voice2Name", value: voice2.name)
+      appendFormField(named: "voice2Gender", value: voice2.gender)
     }
 
     // Add final boundary
