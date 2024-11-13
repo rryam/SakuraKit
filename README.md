@@ -10,7 +10,7 @@ To get started with SakuraKit, add it to your Swift project using Swift Package 
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/rryam/SakuraKit", from: "1.0.0")
+    .package(url: "https://github.com/rryam/SakuraKit", from: "0.1.0")
 ]
 ```
 
@@ -23,7 +23,13 @@ import SakuraKit
 ## Getting Started
 
 ### Prerequisites
-- OpenAI API Key: You will need a valid API key from OpenAI.
+- Play.ht API Key and User ID: Required for text-to-speech functionality.
+
+## Basic Usage
+
+### Play.ht Text-to-Speech
+
+Initialize the Play.ht client:
 
 ## Basic Usage
 
@@ -33,10 +39,24 @@ Here is a quick example to get you started:
 import SakuraKit
 
 // Initialize the SakuraKit client
-let sakuraKit = SakuraKit(apiKey: "your_openai_api_key")
+let playAI = PlayAI(apiKey: "your_playht_api_key", userId: "your_user_id")
 
-// Connect to the Realtime API with a WebSocket
+// Create a PlayNote for generating audio from PDF:
+let request = PlayNoteRequest(
+sourceFileUrl: sourceURL,
+synthesisStyle: .podcast,
+voice1: .angelo,
+voice2: .nia
+)
+
+let response = try await playAI.createPlayNote(request)
 ```
+
+Available voice styles include:
+- Podcast conversations
+- Executive briefings
+- Children's stories
+- Debates
 
 ## Contributing
 
