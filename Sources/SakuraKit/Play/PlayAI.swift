@@ -43,7 +43,7 @@ public actor PlayAI {
   ///
   /// - Returns: A string containing the authenticated WebSocket URL for establishing a connection.
   /// - Throws: An error if the authentication request fails or if the response cannot be parsed.
-  public func authenticateAndFetchWebSocketURL() async throws -> String {
+  private func authenticateAndFetchWebSocketURL() async throws -> String {
     var request = URLRequest(url: authEndpoint)
     request.httpMethod = "POST"
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -80,7 +80,7 @@ public actor PlayAI {
   ///   - requestId: A unique identifier for the request (optional).
   ///
   /// - Throws: An error if the WebSocket connection fails, JSON encoding fails, or if there's an issue sending the message.
-  public func sendTTSCommand(
+  private func sendTTSCommand(
     to url: URL,
     text: String,
     voice: String,
@@ -183,7 +183,7 @@ public actor PlayAI {
   /// - Parameter webSocketTask: The URLSessionWebSocketTask instance representing the active WebSocket connection.
   ///
   /// - Throws: An error if there's an issue processing the audio stream.
-  public func processAudioStream(from webSocketTask: URLSessionWebSocketTask) async throws {
+  private func processAudioStream(from webSocketTask: URLSessionWebSocketTask) async throws {
     let audioStream = receiveMessages(from: webSocketTask)
     
     for try await audioData in audioStream {
@@ -283,11 +283,11 @@ public actor PlayAI {
   
   /// Gets the status and details of a PlayNote.
   ///
-  /// - Parameter id: The ID of the PlayNote to retrieve.
+  /// - Parameter id: The PlayNoteID to retrieve.
   /// - Returns: A PlayNoteResponse containing the current status and details.
   /// - Throws: A PlayAIError if the request fails or returns an invalid response.
-  public func getPlayNote(id: String) async throws -> PlayNoteResponse {
-    let endpoint = URL(string: "https://api.play.ai/api/v1/playnotes/\(id)")!
+  public func getPlayNote(id: PlayNoteID) async throws -> PlayNoteResponse {
+    let endpoint = URL(string: "https://api.play.ai/api/v1/playnotes/\(id.rawValue)")!
     var request = URLRequest(url: endpoint)
     request.addValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
     request.addValue(userId, forHTTPHeaderField: "X-USER-ID")
