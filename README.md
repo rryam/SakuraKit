@@ -10,7 +10,7 @@ To get started with SakuraKit, add it to your Swift project using Swift Package 
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/rryam/SakuraKit", from: "1.0.0")
+    .package(url: "https://github.com/rryam/SakuraKit", from: "0.1.0")
 ]
 ```
 
