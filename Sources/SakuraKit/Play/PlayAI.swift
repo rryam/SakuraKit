@@ -374,11 +374,21 @@ private extension Data {
 private extension JSONDecoder {
   static var playDateDecoder: JSONDecoder {
     let decoder = JSONDecoder()
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-    formatter.timeZone = TimeZone(abbreviation: "UTC")
+    let formatter = ISO8601DateFormatter()
+    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     
-    decoder.dateDecodingStrategy = .formatted(formatter)
+    decoder.dateDecodingStrategy = .custom { decoder in
+      let container = try decoder.singleValueContainer()
+      let dateStr = try container.decode(String.self)
+      
+      guard let date = formatter.date(from: dateStr) else {
+        throw DecodingError.dataCorruptedError(
+          in: container,
+          debugDescription: "Invalid date format: \(dateStr)"
+        )
+      }
+      return date
+    }
     return decoder
   }
 }
