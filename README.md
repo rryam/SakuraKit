@@ -1,5 +1,4 @@
 # SakuraKit: Swift SDK for Prototyping AI Speech Generation
-[![Star History Chart](https://api.star-history.com/svg?repos=rryam/SakuraKit&type=Date)](https://star-history.com/#rryam/SakuraKit&Date)
 
 
 SakuraKit is a Swift SDK designed to quickly prototyping speech-to-speech or text-to-speech using different APIs to build low-latency, multimodal experiences with ease. 
@@ -75,3 +74,5 @@ I welcome contributions! Feel free to open issues or submit pull requests to hel
 ## License
 
 SakuraKit is licensed under the MIT License. See LICENSE for more details.
+
+[![Star History Chart](https://api.star-history.com/svg?repos=rryam/SakuraKit&type=Date)](https://star-history.com/#rryam/SakuraKit&Date)
