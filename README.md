@@ -1,17 +1,8 @@
 # SakuraKit: Swift SDK for Prototyping AI Speech Generation
 
-
 SakuraKit is a Swift SDK designed to quickly prototyping speech-to-speech or text-to-speech using different APIs to build low-latency, multimodal experiences with ease. 
 
 This SDK is named after the cherry blossoms (Sakura) to enjoy in Shibuya next year. 🌸
-
-## Support
-
-Love this project? Check out my books to explore more of AI and iOS development:
-- [Exploring AI for iOS Development](https://academy.rudrank.com/product/ai)
-- [Exploring AI-Assisted Coding for iOS Development](https://academy.rudrank.com/product/ai-assisted-coding)
-
-Your support helps to keep this project growing!
 
 ## Installation
 
